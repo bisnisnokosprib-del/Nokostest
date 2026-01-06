@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Nokos Store</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
+        .hero-section { background: linear-gradient(135deg, #0061f2 0%, #00ba94 100%); color: white; padding: 40px 20px 80px; border-radius: 0 0 30px 30px; }
+        .card-overlap { margin-top: -50px; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .service-box { 
+            border: 1px solid #f1f1f1; border-radius: 12px; padding: 15px; 
+            transition: all 0.3s; background: white; cursor: pointer; position: relative; overflow: hidden;
+        }
+        .service-box:hover { transform: translateY(-5px); border-color: #0061f2; box-shadow: 0 5px 15px rgba(0,97,242,0.15); }
+        .flag-icon { width: 25px; margin-right: 8px; }
+        .otp-screen { font-family: 'Courier New', monospace; font-size: 2rem; letter-spacing: 5px; background: #e9ecef; border: 2px dashed #adb5bd; font-weight: bold; color: #495057; }
+    </style>
+</head>
+<body>
+
+    <div class="hero-section text-center">
+        <h2 class="fw-bold"><i class="fas fa-globe"></i> GLOBAL NOKOS</h2>
+        <p>Sedia Nomor dari 180+ Negara (Indo, Malay, USA, dll)</p>
+    </div>
+
+    <div class="container mb-5">
+        
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card-overlap p-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-4 mb-3 mb-md-0 border-end">
+                            <small class="text-muted fw-bold">SALDO KAMU</small>
+                            <h3 class="fw-bold text-primary mb-0">Rp <span id="saldoUser">0</span></h3>
+                            <button onclick="modalDeposit()" class="btn btn-sm btn-success mt-2 rounded-pill px-3"><i class="fas fa-plus"></i> Isi Saldo</button>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <label class="fw-bold text-secondary mb-2"><i class="fas fa-flag"></i> Pilih Negara Target:</label>
+                            <select id="pilihNegara" class="form-select form-select-lg fw-bold text-dark" style="background-color: #f8f9fa;">
+                                </select>
+                            <small class="text-danger">*Harga mungkin berbeda tiap negara</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-5">
+            <div class="col-12 mb-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold text-secondary border-start border-4 border-primary ps-2">Pilih Aplikasi</h5>
+            </div>
+            
+            <div id="gridProduk" class="row g-3">
+                <div class="col-12 text-center"><div class="spinner-border text-primary"></div></div>
+            </div>
+        </div>
+
+        <div id="areaHasil" class="row mt-4 d-none">
+            <div class="col-md-12">
+                <div class="card border-0 shadow-lg">
+                    <div class="card-header bg-primary text-white fw-bold">
+                        <i class="fas fa-satellite-dish"></i> Menunggu SMS...
+                    </div>
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">Nomor Pesanan (<span id="namaNegaraTerpilih">...</span>)</h6>
+                        <h2 id="txtNomor" class="fw-bold text-dark my-3" style="letter-spacing: 2px;">Generating...</h2>
+                        
+                        <div class="alert alert-info py-2" style="font-size: 0.9rem;">
+                            Masukkan nomor ke aplikasi. Tunggu kode muncul di kotak bawah.
+                        </div>
+
+                        <input type="text" id="txtOTP" class="form-control otp-screen text-center mb-3" value="..." readonly>
+                        
+                        <button onclick="cekStatusManual()" class="btn btn-outline-dark w-100 mb-2">
+                            <i class="fas fa-sync"></i> Refresh Manual
+                        </button>
+                        <small class="text-muted">Order ID: <span id="txtOrderID">-</span></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="modal fade" id="modalDepo">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Isi Saldo (QRIS)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <select id="nominalDepo" class="form-select mb-3">
+                        <option value="10000">10.000</option>
+                        <option value="25000">25.000</option>
+                        <option value="50000">50.000</option>
+                    </select>
+                    <p>Biaya Admin: <b>Rp 450</b></p>
+                    <button class="btn btn-primary w-100" onclick="prosesQRIS()">Bayar Sekarang</button>
+                    <div id="boxQR" class="text-center mt-3 d-none">
+                        <img id="imgQR" src="" width="200">
+                        <p class="small text-danger">Scan sebelum expired!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script type="module">
+        // 1. DATABASE CONFIG (Proyek AE222 Kamu)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAZBAkvjKhcGnHhhu2AACZibySwnydq2jg",
+            authDomain: "proyek-ae222.firebaseapp.com",
+            databaseURL: "https://proyek-ae222-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "proyek-ae222",
+            storageBucket: "proyek-ae222.firebasestorage.app",
+            messagingSenderId: "242829934162",
+            appId: "1:242829934162:web:eba073ae4f190b9424e98b",
+            measurementId: "G-19ZFKH5JC1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // 2. CONFIG API & DATA
+        const API_KEY_RUMAHOTP = "otp_wPjilpEMAHhkucki";
+        const CUAN_PRODUK = 1200; // Untung per nomor
+        const CUAN_DEPO = 450;    // Untung per deposit
+
+        // DATA NEGARA (Format SMSHub/RumahOTP Standar)
+        // 6=Indo, 0=Russia, 1=Ukraine, dll.
+        const negaraList = [
+            { id: 6, name: "🇮🇩 Indonesia (+62)" },
+            { id: 0, name: "🇷🇺 Russia (+7)" },
+            { id: 187, name: "🇺🇸 USA (+1)" },
+            { id: 7, name: "🇲🇾 Malaysia (+60)" },
+            { id: 73, name: "🇧🇷 Brazil (+55)" },
+            { id: 16, name: "🇬🇧 England (+44)" },
+            { id: 2, name: "🇰🇿 Kazakhstan (+7)" },
+            { id: 3, name: "🇨🇳 China (+86)" },
+            { id: 4, name: "🇵🇭 Philippines (+63)" },
+            { id: 5, name: "🇲🇲 Myanmar (+95)" },
+            { id: 10, name: "🇻🇳 Vietnam (+84)" },
+            { id: 148, name: "🇦🇺 Australia (+61)" },
+            { id: 13, name: "🇮🇱 Israel (+972)" },
+            { id: 22, name: "🇮🇳 India (+91)" },
+            { id: 21, name: "🇹🇭 Thailand (+66)" },
+            { id: 18, name: "🇳🇱 Netherlands (+31)" },
+            { id: 15, name: "🇵🇱 Poland (+48)" },
+            { id: 34, name: "🇪🇪 Estonia (+372)" },
+            { id: 35, name: "🇱🇻 Latvia (+371)" },
+            { id: 36, name: "🇱🇹 Lithuania (+370)" },
+            // ... Tambahkan kode negara lain sesuai dokumentasi RumahOTP jika perlu ...
+        ];
+
+        // DATA PRODUK (Dana ditambahkan)
+        const produk = [
+            { id: '3', name: 'WhatsApp', modal: 2400, icon: 'fab fa-whatsapp text-success' },
+            { id: '4', name: 'Telegram', modal: 2800, icon: 'fab fa-telegram text-info' },
+            { id: '5', name: 'TikTok', modal: 1000, icon: 'fab fa-tiktok text-dark' },
+            { id: '1', name: 'Google/Gmail', modal: 1500, icon: 'fab fa-google text-danger' },
+            { id: 'fl', name: 'Dana (E-Wallet)', modal: 2000, icon: 'fas fa-wallet text-primary' }, // Cek ID 'fl' ini
+            { id: '2', name: 'Facebook', modal: 1000, icon: 'fab fa-facebook text-primary' },
+            { id: '9', name: 'Instagram', modal: 1000, icon: 'fab fa-instagram text-danger' },
+            { id: 'sho', name: 'Shopee', modal: 1200, icon: 'fas fa-shopping-bag text-warning' }
+        ];
+
+        // 3. LOAD DROPDOWN NEGARA
+        const selectNegara = document.getElementById('pilihNegara');
+        negaraList.forEach(n => {
+            let option = document.createElement("option");
+            option.value = n.id;
+            option.text = n.name;
+            selectNegara.appendChild(option);
+        });
+
+        // 4. LOAD PRODUK KE GRID
+        const grid = document.getElementById('gridProduk');
+        grid.innerHTML = '';
+        produk.forEach(p => {
+            // Kita pakai harga estimasi (Modal + Cuan)
+            // Catatan: Ini harga estimasi Indo, kalau pilih USA harga aslinya bisa lebih mahal/murah
+            let hargaJual = p.modal + CUAN_PRODUK;
+            
+            grid.innerHTML += `
+                <div class="col-6 col-md-3">
+                    <div class="service-box text-center h-100" onclick="beli('${p.id}', ${hargaJual}, '${p.name}')">
+                        <i class="${p.icon} fa-3x mb-3"></i>
+                        <h6 class="fw-bold text-dark">${p.name}</h6>
+                        <div class="text-success fw-bold">Rp ${hargaJual.toLocaleString()}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        // 5. USER & SALDO
+        let userID = localStorage.getItem('uID');
+        if(!userID) { userID = 'u_' + Date.now(); localStorage.setItem('uID', userID); }
+        let currentSaldo = 0;
+
+        onValue(ref(db, 'users/' + userID + '/saldo'), (s) => {
+            currentSaldo = s.val() || 0;
+            document.getElementById('saldoUser').innerText = currentSaldo.toLocaleString('id-ID');
+        });
+
+        // 6. FUNGSI BELI (Logika Dinamis Negara)
+        window.beli = async function(serviceId, harga, nama) {
+            // Ambil negara yang dipilih user sekarang
+            const negaraID = document.getElementById('pilihNegara').value;
+            const namaNegara = document.getElementById('pilihNegara').options[document.getElementById('pilihNegara').selectedIndex].text;
+
+            if(currentSaldo < harga) { 
+                alert("Saldo tidak cukup! Silakan deposit dulu."); 
+                window.modalDeposit(); 
+                return; 
+            }
+
+            if(confirm(`Beli ${nama} untuk negara ${namaNegara}?\nPerkiraan Harga: Rp ${harga}`)) {
+                // Potong saldo
+                update(ref(db, 'users/' + userID), { saldo: currentSaldo - harga });
+
+                // UI Loading
+                document.getElementById('areaHasil').classList.remove('d-none');
+                document.getElementById('namaNegaraTerpilih').innerText = namaNegara;
+                document.getElementById('txtNomor').innerText = "Requesting...";
+                document.getElementById('txtOTP').value = "...";
+
+                // REQUES KE API (Pakai Proxy & Negara Dinamis)
+                // action=getNumber, service=XXX, country=XXX (dari dropdown)
+                const url = `https://rumahotp.com/stubs/handler_api.php?api_key=${API_KEY_RUMAHOTP}&action=getNumber&service=${serviceId}&country=${negaraID}`;
+                const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+
+                try {
+                    const res = await fetch(proxy);
+                    const json = await res.json();
+                    const text = json.contents;
+
+                    console.log("API Response:", text);
+
+                    if(text.includes("ACCESS_NUMBER")) {
+                        let parts = text.split(':');
+                        let idOrder = parts[1];
+                        let noHp = parts[2];
+
+                        document.getElementById('txtNomor').innerText = "+" + noHp;
+                        document.getElementById('txtOrderID').innerText = idOrder;
+                        
+                        // Mulai pantau SMS
+                        pantauSMS(idOrder);
+
+                    } else if (text.includes("NO_NUMBERS")) {
+                        alert("Stok kosong untuk negara/layanan ini. Saldo dikembalikan.");
+                        update(ref(db, 'users/' + userID), { saldo: currentSaldo + harga });
+                        document.getElementById('areaHasil').classList.add('d-none');
+                    } else {
+                        alert("Gagal ambil nomor: " + text);
+                        update(ref(db, 'users/' + userID), { saldo: currentSaldo + harga });
+                    }
+                } catch (e) {
+                    alert("Koneksi Error");
+                    update(ref(db, 'users/' + userID), { saldo: currentSaldo + harga });
+                }
+            }
+        }
+
+        // 7. PANTAU SMS
+        let timer;
+        function pantauSMS(id) {
+            document.getElementById('txtOTP').value = "MENUNGGU SMS...";
+            timer = setInterval(async () => {
+                const url = `https://rumahotp.com/stubs/handler_api.php?api_key=${API_KEY_RUMAHOTP}&action=getStatus&id=${id}`;
+                const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                
+                try {
+                    const r = await fetch(proxy);
+                    const d = await r.json();
+                    const st = d.contents;
+                    console.log("Status:", st);
+
+                    if(st.includes("STATUS_OK")) {
+                        const otp = st.split(':')[1];
+                        document.getElementById('txtOTP').value = otp;
+                        clearInterval(timer);
+                        alert("OTP Diterima!");
+                    } else if (st.includes("STATUS_CANCEL")) {
+                        document.getElementById('txtOTP').value = "BATAL";
+                        clearInterval(timer);
+                    }
+                } catch(e) {}
+            }, 5000); // Cek tiap 5 detik
+        }
+
+        // 8. DEPOSIT
+        window.modalDeposit = function() { new bootstrap.Modal(document.getElementById('modalDepo')).show(); }
+        window.prosesQRIS = function() {
+            let val = parseInt(document.getElementById('nominalDepo').value);
+            let tot = val + CUAN_DEPO;
+            document.getElementById('boxQR').classList.remove('d-none');
+            document.getElementById('imgQR').src = `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=BAYAR_DUMMY_${tot}`;
+            
+            setTimeout(() => {
+                if(confirm("Simulasi: Pembayaran Sukses?")) {
+                    update(ref(db, 'users/' + userID), { saldo: currentSaldo + val });
+                    location.reload();
+                }
+            }, 4000);
+        }
+
+        window.cekStatusManual = function() { alert("Sedang merefresh koneksi..."); }
+    </script>
+</body>
+</html>
